@@ -85,14 +85,6 @@ public class Transactions_Points_Controller {
         //If Point to be added is Positive simply add it to the transactionQ
         if(point>0) transactionsQ.offer(transactions);
 
-        /*
-        If point to be added is negative then:
-            1. If it is a new Payer then the transaction is invalid because the points for the first payer can't be negative.
-            2. For existing Payer we have following conditions:
-                i. if old transaction point + current point to be added for the payer is > 0 then set the current transaction point = old transaction point + current point to be added.
-                ii. else if it's == 0 then remove the current transaction from the transactionsQ.
-                iii. else throw error.
-        */
         else if(point<0) {
             if (!pointsPerPayer.containsKey(payer))
                 throw new RuntimeException("Invalid transaction record");
@@ -114,7 +106,7 @@ public class Transactions_Points_Controller {
         //Update the user total points
         user.setTotalrewardPoints(user.getTotalrewardPoints() + point);
 
-        //Update Points Per Payer
+        //Update Points for each Payer
         pointsPerPayer.put(transactions.getPayerName(),(pointsPerPayer.getOrDefault(transactions.getPayerName(), 0L).longValue() + point));
 
 
@@ -122,30 +114,26 @@ public class Transactions_Points_Controller {
     }
 
 
-    //Subtract spend the points for userId with respect to each payer point
+    //Subtract spend points
     @GetMapping("/spend/{spend}/{id}")
     public ResponseEntity<List<StringBuilder>> spendPoints(@Validated @PathVariable int id, @Validated @PathVariable long spend){
 
         if(!users.containsKey(id))
             throw new RuntimeException("User not found or absent!");
 
-        //List of spend points from each payer
+        //List of spend points
         List<StringBuilder> spentPerPayer = new ArrayList<>();
 
         Users user = users.get(id);
-        //Get User rewards map for each payer
         Map<String, Long> pointsPerPayer = user.getPointsPerPayer();
 
-        //Get User transactions
         PriorityQueue<Transactions> transactionsQ = user.getTransactionsQueue();
 
-        //Get User Total Rewards
         long totalPoints = user.getTotalrewardPoints();
         logger.info("Initial Total Points Before Spending for user " + id + " : " + totalPoints);
 
         logger.info("Actual Spend Points:" + spend);
 
-        //Check whether the point spend is greater than totalPoints then throw Exception
         if(spend > user.getTotalrewardPoints()) throw new RuntimeException("Unsufficient Reward Balance!!!");
 
         while(spend > 0 && !transactionsQ.isEmpty()){
@@ -160,10 +148,10 @@ public class Transactions_Points_Controller {
 
 
 
-            //Update the user total points
+
             user.setTotalrewardPoints(user.getTotalrewardPoints() - remaining);
 
-            //Update Points Per Payer
+
             pointsPerPayer.put(currTransaction.getPayerName(),(pointsPerPayer.getOrDefault(currTransaction.getPayerName(), 0L).longValue() - remaining));
 
             logger.info("Spent Per Payer List:" + spentPerPayer);
@@ -175,7 +163,7 @@ public class Transactions_Points_Controller {
         return ResponseEntity.ok().body(spentPerPayer);
     }
 
-    //Show the balance points of the user for each payer.
+    //Show the balance for each user
     @GetMapping("/balance/{id}")
     public ResponseEntity<List<StringBuilder>> balanceOfUserForEachPayer(@Validated @PathVariable int id){
         //List of Balanced Points for with given userId
