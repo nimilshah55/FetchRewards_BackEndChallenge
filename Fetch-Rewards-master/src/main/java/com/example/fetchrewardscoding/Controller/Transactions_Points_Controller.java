@@ -15,13 +15,12 @@ import java.util.*;
 @RequestMapping("/api")
 public class Transactions_Points_Controller {
 
-    //logger for logging
     Logger logger = LoggerFactory.getLogger(Transactions_Points_Controller.class);
 
     private static int counter = 0;
     private static final Map<Integer, Users> users = new HashMap<>();
 
-    //Retrieve all the transactions of all users in the system.
+    //Retrieve all the transactions
     @GetMapping("/transactions")
     public Map<Integer, PriorityQueue<Transactions>> getUsersTransactions() {
         Map<Integer, PriorityQueue<Transactions>> usersTransactions = new HashMap<>();
@@ -42,29 +41,22 @@ public class Transactions_Points_Controller {
         }
     }
 
-    //Post request to add points for each transactions for users with specified userId
+    //Post request to add points for each transactions
     @PostMapping("/addPoints/{id}")
     public ResponseEntity<Transactions> addPoints(@Validated @PathVariable int id, @Validated @RequestBody Transactions transactions){
 
         Users user;
 
-        //Incrementing the transaction counter to use it as id for all new transactions
         counter++;
 
-        //Get all the transactions details
-        //Set the transaction Id.
         transactions.setTransactionId(counter);
 
-        //set the transaction timestamp to now time.
         transactions.setTimestamp(LocalDateTime.now());
 
-        //set payer name for the transaction
         String payer = transactions.getPayerName();
 
-        //current transaction point
         long point = transactions.getPoints();
 
-        //Create new user if user is not created
         if(!users.containsKey(id)){
             user = new Users(id);
             users.put(user.getUserId(), user);
@@ -73,23 +65,19 @@ public class Transactions_Points_Controller {
             user = users.get(id);
         }
 
-        //Get User Total Rewards
         long totalPoints = user.getTotalrewardPoints();
 
-        //Get User rewards map for each payer
         Map<String, Long> pointsPerPayer = user.getPointsPerPayer();
 
-        //Get User transactions
         PriorityQueue<Transactions> transactionsQ = user.getTransactionsQueue();
 
-        //If Point to be added is Positive simply add it to the transactionQ
         if(point>0) transactionsQ.offer(transactions);
 
         else if(point<0) {
             if (!pointsPerPayer.containsKey(payer))
                 throw new RuntimeException("Invalid transaction record");
             else {
-                //Filter the transaction from transactionQ where existing Payer Name == current Payer
+
                 Transactions currentTransaction = transactionsQ.stream()
                         .filter(t -> t.getPayerName().equals(transactions.getPayerName())).findFirst().orElse(null);
 
