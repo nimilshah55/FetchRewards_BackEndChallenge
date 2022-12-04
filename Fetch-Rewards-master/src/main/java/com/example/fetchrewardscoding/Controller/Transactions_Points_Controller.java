@@ -13,10 +13,10 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api")
-public class PointsController {
+public class Transactions_Points_Controller {
 
     //logger for logging
-    Logger logger = LoggerFactory.getLogger(PointsController.class);
+    Logger logger = LoggerFactory.getLogger(Transactions_Points_Controller.class);
 
     private static int counter = 0;
     private static final Map<Integer, Users> users = new HashMap<>();
